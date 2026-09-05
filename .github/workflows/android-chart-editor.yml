@@ -2,6 +2,9 @@ name: Android Chart Editor Build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - android-chart-editor
 
 jobs:
   build-android:
