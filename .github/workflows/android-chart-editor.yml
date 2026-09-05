@@ -90,7 +90,13 @@ jobs:
             wayland-protocols \
             gcc-multilib \
             g++-multilib \
-            pkg-config
+            pkg-config \
+            libpipewire-0.3-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libpipewire-0.3-dev \
+            libvlc-dev 
+            
       - name: Configure Lime
         run: |
           haxelib run lime rebuild cpp -64
