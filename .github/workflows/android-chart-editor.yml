@@ -1,0 +1,89 @@
+name: Android Chart Editor Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout source and assets
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Haxe
+        uses: FunkinCrew/ci-haxe@v3
+        with:
+          haxe-version: '4.3.7'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "build-tools;35.0.0" \
+            "platforms;android-29" \
+            "platforms;android-35" \
+            "ndk;29.0.13113456"
+
+      - name: Configure Haxelib
+        run: |
+          haxelib --never newrepo
+          echo "HAXEPATH=$(haxelib config)" >> "$GITHUB_ENV"
+
+      - name: Install Funkin dependencies
+        run: |
+          git config --global advice.detachedHead false
+          haxelib --global git haxelib https://github.com/FunkinCrew/haxelib.git
+          haxelib --global git hmm https://github.com/FunkinCrew/hmm.git
+          haxelib --global run hmm install -q
+          haxelib --global fixrepo
+          haxelib --global list
+
+      - name: Build HXCPP tools
+        run: |
+          pushd .haxelib/hxcpp/git/tools/hxcpp
+          haxe compile.hxml
+          popd
+
+      - name: Configure Lime
+        run: |
+          haxelib --always run lime setup
+          haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
+          haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/29.0.13113456"
+          haxelib run lime config JAVA_HOME "$JAVA_HOME"
+          haxelib run lime config ANDROID_SETUP true
+          haxelib run lime rebuild hxcpp
+
+      - name: Build Android APK
+        run: |
+          haxelib run lime build android \
+            -v \
+            -release \
+            -DGITHUB_BUILD \
+            -DFEATURE_CHART_EDITOR \
+            -DEXCLUDE_ARMV7
+
+      - name: Find APK
+        run: |
+          find export -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fnf-android-chart-editor
+          path: |
+            export/**/*.apk
+          if-no-files-found: error
