@@ -113,6 +113,7 @@ jobs:
           haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/29.0.13113456"
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
           haxelib run lime config ANDROID_SETUP true
+          haxelib run lime rebuild android
 
       - name: Build Android APK
         run: |
